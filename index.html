@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Diario del bebé</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Diario bebé">
+<meta name="theme-color" content="#22333B">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --base: #EFF3F0;
+  --card: #FFFFFF;
+  --ink: #22333B;
+  --muted: #64766F;
+  --nap: #E8A24B;
+  --nap-bg: #FDF1DF;
+  --night: #6B5B95;
+  --night-bg: #ECE7F5;
+  --food: #C9584A;
+  --food-bg: #FBE7E3;
+  --line: #DDE5E0;
+}
+
+*{box-sizing:border-box; -webkit-user-select:none; user-select:none;}
+input, .note{-webkit-user-select:text; user-select:text;}
+html,body{
+  margin:0;padding:0;
+  height:100%;
+  overscroll-behavior:none;
+  position:fixed;
+  width:100%;
+  overflow:hidden;
+}
+body{
+  background:var(--ink);
+  font-family:'Inter',sans-serif;
+  color:var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+#app{
+  max-width:480px;
+  margin:0 auto;
+  height:100%;
+  background:var(--base);
+  padding-bottom:calc(90px + env(safe-area-inset-bottom));
+  position:relative;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+}
+
+header{
+  padding:calc(18px + env(safe-area-inset-top)) 20px 18px;
+  position:sticky;
+  top:0;
+  background:var(--base);
+  z-index:5;
+  border-bottom:1px solid var(--line);
+}
+header h1{
+  font-family:'Fraunces',serif;
+  font-weight:700;
+  font-size:24px;
+  margin:0;
+  letter-spacing:-0.01em;
+}
+.header-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.week-btn{
+  background:var(--night-bg);
+  border:1px solid var(--night);
+  color:var(--ink);
+  font-weight:600;
+  font-size:11.5px;
+  padding:9px 12px;
+  border-radius:20px;
+  white-space:nowrap;
+  cursor:pointer;
+  flex-shrink:0;
+  font-family:'Inter',sans-serif;
+}
+.week-btn:active{ transform:scale(0.94); }
+header .sub{
+  font-size:13px;
+  color:var(--muted);
+}
+#connStatus{
+  font-size:11px;
+  margin-top:6px;
+  font-weight:600;
+}
+#connStatus.ok{color:#4C8B5C;}
+#connStatus.bad{color:var(--food);}
+
+.day-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:14px;
+}
+.day-nav button{
+  background:none;
+  border:none;
+  font-size:22px;
+  color:var(--muted);
+  width:44px; height:44px;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.day-nav button:active{ color:var(--ink); }
+.day-nav .day-label{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:16px;
+  text-align:center;
+}
+.day-nav .day-label .today-tag{
+  display:block;
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:11px;
+  color:var(--nap);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  margin-top:2px;
+}
+
+.arc-wrap{ padding:18px 20px 6px; }
+.arc-svg{width:100%; display:block; height:70px;}
+.arc-legend{
+  display:flex; gap:14px; justify-content:center;
+  font-size:11px; color:var(--muted); margin-top:4px;
+}
+.arc-legend span{display:flex; align-items:center; gap:5px;}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.sleep-total{
+  text-align:center;
+  margin-top:12px;
+  font-size:13.5px;
+  color:var(--muted);
+  background:var(--night-bg);
+  border:1px solid var(--night);
+  border-radius:12px;
+  padding:9px 12px;
+}
+.sleep-total b{ color:var(--ink); font-weight:700; }
+
+.quick-add{ padding:16px 20px 4px; }
+.quick-add h2{
+  font-family:'Fraunces',serif; font-size:15px; font-weight:600;
+  margin:0 0 10px; color:var(--muted);
+}
+.btn-grid{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;
+}
+.btn-grid button{
+  border:1px solid var(--line); background:var(--card); border-radius:16px;
+  padding:16px 6px; min-height:64px; font-family:'Inter',sans-serif; font-weight:600;
+  font-size:13px; color:var(--ink); cursor:pointer; transition:transform .08s ease, box-shadow .08s ease;
+  box-shadow:0 1px 2px rgba(34,51,59,0.04);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+}
+.btn-grid button:active{transform:scale(0.94); box-shadow:none;}
+.btn-grid button.nap{border-color:var(--nap); background:var(--nap-bg);}
+.btn-grid button.night{border-color:var(--night); background:var(--night-bg);}
+.btn-grid button.food{border-color:var(--food); background:var(--food-bg);}
+
+.timeline{ padding:8px 20px 20px; }
+.timeline h2{
+  font-family:'Fraunces',serif; font-size:15px; font-weight:600;
+  margin:14px 0 10px; color:var(--muted);
+}
+.entry{
+  display:flex; gap:12px; background:var(--card); border-radius:14px;
+  padding:12px 14px; margin-bottom:8px; align-items:flex-start; border:1px solid var(--line);
+}
+.entry .badge{ width:8px;height:8px;border-radius:50%; margin-top:6px; flex-shrink:0; }
+.entry .content{flex:1;}
+.entry .time{ font-weight:700; font-size:14px; }
+.entry .label{ font-size:13px; color:var(--muted); }
+.entry .note{ font-size:12.5px; color:var(--ink); margin-top:3px; font-style:italic; }
+.entry .del{
+  background:none;border:none;color:var(--muted); font-size:17px;cursor:pointer;
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin:-6px -6px -6px 0;
+}
+.entry .del:active{ color:var(--food); }
+.empty-state{ text-align:center; color:var(--muted); font-size:13px; padding:30px 10px; font-style:italic; }
+
+.overlay{
+  position:fixed; inset:0; background:rgba(34,51,59,0.45);
+  display:none; align-items:flex-end; justify-content:center; z-index:20;
+}
+.overlay.show{display:flex;}
+.sheet{
+  background:var(--card); width:100%; max-width:480px;
+  border-radius:22px 22px 0 0; padding:22px 20px 28px; animation:slideup .2s ease;
+}
+@keyframes slideup{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.sheet h3{ font-family:'Fraunces',serif; margin:0 0 16px; font-size:19px; }
+.field{margin-bottom:14px;}
+.field label{
+  display:block; font-size:12px; font-weight:600; color:var(--muted);
+  margin-bottom:5px; text-transform:uppercase; letter-spacing:0.04em;
+}
+.field input[type="time"], .field input[type="text"]{
+  width:100%; padding:14px 14px; border-radius:12px; border:1px solid var(--line);
+  font-size:16px; font-family:'Inter',sans-serif; background:var(--base); color:var(--ink);
+  -webkit-appearance:none; appearance:none;
+}
+.sheet-actions{ display:flex; gap:10px; margin-top:6px; }
+.sheet-actions button{
+  flex:1; padding:16px; min-height:52px; border-radius:14px; border:none; font-weight:700;
+  font-size:15px; cursor:pointer; font-family:'Inter',sans-serif;
+}
+.sheet-actions button:active{ transform:scale(0.97); }
+.sheet{ padding-bottom:calc(28px + env(safe-area-inset-bottom)); }
+.sheet-actions .cancel{ background:var(--base); color:var(--muted); }
+.sheet-actions .save{ background:var(--ink); color:#fff; }
+
+.sync-note{ text-align:center; font-size:11px; color:var(--muted); padding:6px 20px 0; }
+
+.toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:var(--ink); color:#fff; padding:10px 18px; border-radius:30px;
+  font-size:13px; opacity:0; transition:opacity .25s ease; pointer-events:none; z-index:30;
+}
+.toast.show{opacity:1;}
+
+.setup-banner{
+  margin:16px 20px; padding:14px 16px; background:#FBE7E3; border:1px solid var(--food);
+  border-radius:14px; font-size:12.5px; line-height:1.5;
+}
+.setup-banner b{display:block; margin-bottom:4px;}
+
+.week-range{ text-align:center; font-size:12.5px; color:var(--muted); margin-bottom:10px; }
+.week-chart{ width:100%; height:190px; display:block; }
+.week-legend{
+  display:flex; gap:14px; justify-content:center; font-size:11px; color:var(--muted); margin-top:6px;
+}
+.week-legend span{display:flex; align-items:center; gap:5px;}
+.week-avg{
+  text-align:center; font-size:13.5px; color:var(--muted); margin-top:14px;
+  background:var(--base); border-radius:12px; padding:10px 12px;
+}
+.week-avg b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="header-top">
+      <h1>🌤️ Diario del bebé</h1>
+      <button class="week-btn" onclick="openWeekly()">📊 Sueño semanal</button>
+    </div>
+    <div id="connStatus">Conectando…</div>
+    <div class="day-nav">
+      <button onclick="changeDay(-1)">‹</button>
+      <div class="day-label" id="dayLabel">—</div>
+      <button onclick="changeDay(1)">›</button>
+    </div>
+  </header>
+
+  <div id="setupBanner" class="setup-banner" style="display:none;">
+    <b>⚠️ Falta configurar Firebase</b>
+    Sustituye el objeto <code>firebaseConfig</code> en el código por el de tu proyecto de Firebase. Mira las instrucciones que te di en el chat.
+  </div>
+
+  <div class="arc-wrap">
+    <svg class="arc-svg" id="arcSvg" viewBox="0 0 340 70"></svg>
+    <div class="arc-legend">
+      <span><i class="dot" style="background:var(--night)"></i>Sueño noche</span>
+      <span><i class="dot" style="background:var(--nap)"></i>Siesta</span>
+      <span><i class="dot" style="background:var(--food)"></i>Comida</span>
+    </div>
+    <div class="sleep-total" id="sleepTotal">😴 Tiempo de sueño hoy: <b>—</b></div>
+  </div>
+
+  <div class="quick-add">
+    <h2>Sueño</h2>
+    <div class="btn-grid">
+      <button class="night" onclick="openModal('wake','Despertar (mañana)')">☀️ Despertar</button>
+      <button class="nap" onclick="openModal('nap','Siesta')">😴 Siesta</button>
+      <button class="night" onclick="openModal('sleep_night','Se duerme (noche)')">🌙 Duerme (noche)</button>
+    </div>
+    <h2>Comidas</h2>
+    <div class="btn-grid">
+      <button class="food" onclick="openModal('teta','Teta')">🤱 Teta</button>
+      <button class="food" onclick="openModal('desayuno','Desayuno')">🥣 Desayuno</button>
+      <button class="food" onclick="openModal('comida','Comida')">🍽️ Comida</button>
+      <button class="food" onclick="openModal('merienda','Merienda')">🍎 Merienda</button>
+      <button class="food" onclick="openModal('cena','Cena')">🌜 Cena</button>
+    </div>
+  </div>
+
+  <div class="timeline">
+    <h2>Hoy, en orden</h2>
+    <div id="entryList"></div>
+  </div>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h3 id="sheetTitle">Añadir</h3>
+    <div class="field">
+      <label id="timeLabel">Hora</label>
+      <input type="time" id="timeInput">
+    </div>
+    <div class="field" id="endTimeField" style="display:none;">
+      <label>Hora fin</label>
+      <input type="time" id="endTimeInput">
+    </div>
+    <div class="field" id="noteField">
+      <label>Notas (opcional)</label>
+      <input type="text" id="noteInput" placeholder="ej. lloró un poco, comió bien...">
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="closeModal()">Cancelar</button>
+      <button class="save" onclick="saveEntry()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="weekOverlay">
+  <div class="sheet">
+    <h3>😴 Sueño semanal</h3>
+    <div id="weekRange" class="week-range"></div>
+    <svg id="weekChart" viewBox="0 0 340 190" class="week-chart"></svg>
+    <div class="week-legend">
+      <span><i class="dot" style="background:#4C8B5C"></i>Más sueño</span>
+      <span><i class="dot" style="background:var(--food)"></i>Menos sueño</span>
+      <span><i class="dot" style="background:var(--night)"></i>Otros días</span>
+    </div>
+    <div id="weekAvg" class="week-avg"></div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="closeWeekly()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat, sin build tools) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+
+<script>
+/* ============================================================
+   1) PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
+      (la sacas de: Firebase Console > Configuración del proyecto
+      > Tus apps > app web > Config)
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBx7zwyXMuGSYbrJQCBaG4iorhG-itYDKY",
+  authDomain: "bebe-diario.firebaseapp.com",
+  databaseURL: "https://bebe-diario-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bebe-diario",
+  storageBucket: "bebe-diario.firebasestorage.app",
+  messagingSenderId: "778127811651",
+  appId: "1:778127811651:web:c38bc32ba0371e2e3ae0f6"
+};
+/* ============================================================ */
+
+const isConfigured = !firebaseConfig.apiKey.includes("PEGA_AQUI");
+let db = null;
+
+if(isConfigured){
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+} else {
+  document.getElementById('setupBanner').style.display = 'block';
+  document.getElementById('connStatus').textContent = 'Sin configurar';
+  document.getElementById('connStatus').className = 'bad';
+}
+
+const TYPE_META = {
+  wake:        {label:'Despertar', color:'var(--night)'},
+  nap:         {label:'Siesta', color:'var(--nap)'},
+  nap_start:   {label:'Empieza siesta', color:'var(--nap)'},
+  nap_end:     {label:'Termina siesta', color:'var(--nap)'},
+  sleep_night: {label:'Se duerme (noche)', color:'var(--night)'},
+  teta:        {label:'Teta', color:'var(--food)'},
+  desayuno:    {label:'Desayuno', color:'var(--food)'},
+  comida:      {label:'Comida', color:'var(--food)'},
+  merienda:    {label:'Merienda', color:'var(--food)'},
+  cena:        {label:'Cena', color:'var(--food)'},
+};
+
+let currentDate = new Date();
+let pendingType = null;
+let currentEntries = [];
+let activeRef = null;
+
+function fmtDateKey(d){ return d.toISOString().slice(0,10); }
+function fmtDayLabel(d){
+  const isToday = fmtDateKey(d) === fmtDateKey(new Date());
+  let str = d.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
+  str = str.charAt(0).toUpperCase() + str.slice(1);
+  return {str, isToday};
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function subscribeToDay(){
+  if(!db) return;
+  if(activeRef) activeRef.off();
+  const key = fmtDateKey(currentDate);
+  activeRef = db.ref('entries/' + key);
+  document.getElementById('connStatus').textContent = 'Conectando…';
+  activeRef.on('value', snap => {
+    document.getElementById('connStatus').textContent = '● Conectado y sincronizado';
+    document.getElementById('connStatus').className = 'ok';
+    const val = snap.val() || {};
+    currentEntries = Object.keys(val).map(id => ({id, ...val[id]}));
+    currentEntries.sort((a,b)=> a.time.localeCompare(b.time));
+    renderArc(currentEntries);
+    renderSleepTotal(currentEntries);
+    renderEntries(currentEntries);
+  }, err => {
+    document.getElementById('connStatus').textContent = 'Error de conexión';
+    document.getElementById('connStatus').className = 'bad';
+  });
+}
+
+function changeDay(delta){
+  currentDate.setDate(currentDate.getDate()+delta);
+  const {str, isToday} = fmtDayLabel(currentDate);
+  document.getElementById('dayLabel').innerHTML = str + (isToday ? '<span class="today-tag">Hoy</span>' : '');
+  subscribeToDay();
+}
+
+function openModal(type, title){
+  if(!db){ showToast('Configura Firebase primero'); return; }
+  pendingType = type;
+  document.getElementById('sheetTitle').textContent = title;
+  const now = new Date();
+  const nowStr = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('timeInput').value = nowStr;
+  document.getElementById('noteInput').value = '';
+
+  const isNap = (type === 'nap');
+  document.getElementById('timeLabel').textContent = isNap ? 'Hora inicio' : 'Hora';
+  document.getElementById('endTimeField').style.display = isNap ? 'block' : 'none';
+  if(isNap) document.getElementById('endTimeInput').value = nowStr;
+
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('overlay').classList.remove('show');
+  pendingType = null;
+}
+
+function saveEntry(){
+  const time = document.getElementById('timeInput').value;
+  if(!time){ showToast('Elige una hora'); return; }
+  const note = document.getElementById('noteInput').value.trim();
+  const key = fmtDateKey(currentDate);
+  const data = {type: pendingType, time, note};
+
+  if(pendingType === 'nap'){
+    const endTime = document.getElementById('endTimeInput').value;
+    if(!endTime){ showToast('Elige la hora de fin'); return; }
+    if(timeToMinutes(endTime) <= timeToMinutes(time)){
+      showToast('La hora de fin debe ser después del inicio'); return;
+    }
+    data.endTime = endTime;
+  }
+
+  const newRef = db.ref('entries/' + key).push();
+  newRef.set(data)
+    .then(()=>{ closeModal(); showToast('Guardado ✓'); })
+    .catch(()=>{ showToast('Error al guardar. Revisa la conexión.'); });
+}
+
+function deleteEntry(id){
+  const key = fmtDateKey(currentDate);
+  db.ref('entries/' + key + '/' + id).remove();
+}
+
+function timeToMinutes(t){
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+
+function calcSleepMinutes(entries){
+  const sorted = [...entries].sort((a,b)=> a.time.localeCompare(b.time));
+  let total = 0;
+
+  // Siestas: las nuevas ya traen inicio y fin juntos
+  sorted.forEach(e=>{
+    if(e.type === 'nap' && e.endTime){
+      total += Math.max(0, timeToMinutes(e.endTime) - timeToMinutes(e.time));
+    }
+  });
+
+  // Siestas con el formato antiguo (empieza/termina por separado)
+  let openNap = null;
+  sorted.forEach(e=>{
+    if(e.type === 'nap_start'){ openNap = e.time; }
+    else if(e.type === 'nap_end' && openNap){
+      total += Math.max(0, timeToMinutes(e.time) - timeToMinutes(openNap));
+      openNap = null;
+    }
+  });
+
+  // Sueño nocturno: de "duerme (noche)" hasta el final del día (medianoche),
+  // más de medianoche hasta "despertar" (el trozo de esa misma noche que cae en este día)
+  const sleepNight = sorted.find(e=>e.type==='sleep_night');
+  const wake = sorted.find(e=>e.type==='wake');
+  if(sleepNight){ total += (24*60) - timeToMinutes(sleepNight.time); }
+  if(wake){ total += timeToMinutes(wake.time); }
+
+  return total;
+}
+
+function fmtMinutes(mins){
+  const h = Math.floor(mins/60);
+  const m = mins % 60;
+  if(h === 0) return `${m} min`;
+  if(m === 0) return `${h} h`;
+  return `${h} h ${m} min`;
+}
+
+function renderSleepTotal(entries){
+  const el = document.getElementById('sleepTotal');
+  const mins = calcSleepMinutes(entries);
+  el.innerHTML = `😴 Tiempo de sueño hoy: <b>${fmtMinutes(mins)}</b>`;
+}
+
+function renderArc(entries){
+  const svg = document.getElementById('arcSvg');
+  const W=340,H=70, padX=14;
+  let html = `<line x1="${padX}" y1="40" x2="${W-padX}" y2="40" stroke="var(--line)" stroke-width="2"/>`;
+  [0,6,12,18,24].forEach(h=>{
+    const x = padX + (h/24)*(W-2*padX);
+    html += `<line x1="${x}" y1="35" x2="${x}" y2="45" stroke="var(--line)" stroke-width="1"/>`;
+    html += `<text x="${x}" y="60" font-size="9" fill="var(--muted)" text-anchor="middle" font-family="Inter">${h}h</text>`;
+  });
+  entries.forEach(e=>{
+    const meta = TYPE_META[e.type];
+    const [hh,mm] = e.time.split(':').map(Number);
+    const x = padX + ((hh + mm/60)/24)*(W-2*padX);
+
+    if(e.type === 'nap' && e.endTime){
+      const [eh,em] = e.endTime.split(':').map(Number);
+      const x2 = padX + ((eh + em/60)/24)*(W-2*padX);
+      html += `<line x1="${x}" y1="40" x2="${x2}" y2="40" stroke="${meta.color}" stroke-width="6" stroke-linecap="round"/>`;
+    } else {
+      html += `<circle cx="${x}" cy="40" r="6" fill="${meta.color}" stroke="white" stroke-width="1.5"/>`;
+    }
+  });
+  svg.innerHTML = html;
+}
+
+function renderEntries(entries){
+  const list = document.getElementById('entryList');
+  if(entries.length===0){
+    list.innerHTML = '<div class="empty-state">Nada apuntado todavía. Usa los botones de arriba ↑</div>';
+    return;
+  }
+  list.innerHTML = entries.map(e=>{
+    const meta = TYPE_META[e.type];
+    const timeLabel = (e.type === 'nap' && e.endTime) ? `${e.time}–${e.endTime}` : e.time;
+    return `<div class="entry">
+      <span class="badge" style="background:${meta.color}"></span>
+      <div class="content">
+        <div class="time">${timeLabel}</div>
+        <div class="label">${meta.label}</div>
+        ${e.note ? `<div class="note">"${escapeHtml(e.note)}"</div>` : ''}
+      </div>
+      <button class="del" onclick="deleteEntry('${e.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===== Sueño semanal =====
+const WEEKDAY_LETTERS = ['L','M','X','J','V','S','D'];
+
+function getWeekDates(d){
+  const day = d.getDay(); // 0=domingo ... 6=sábado
+  const diffToMonday = (day === 0) ? -6 : (1 - day);
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+  const week = [];
+  for(let i=0;i<7;i++){
+    const dt = new Date(monday);
+    dt.setDate(monday.getDate()+i);
+    week.push(dt);
+  }
+  return week;
+}
+
+function fmtShortDate(d){
+  return d.toLocaleDateString('es-ES', {day:'numeric', month:'short'});
+}
+
+async function loadWeekSleepData(){
+  const week = getWeekDates(currentDate);
+  const results = await Promise.all(week.map(d=>{
+    const key = fmtDateKey(d);
+    return db.ref('entries/' + key).once('value').then(snap=>{
+      const val = snap.val() || {};
+      const entries = Object.keys(val).map(id => ({id, ...val[id]}));
+      return { date: d, minutes: calcSleepMinutes(entries), hasData: entries.length > 0 };
+    });
+  }));
+  return results;
+}
+
+function renderWeekChart(results){
+  const withData = results.filter(r => r.hasData);
+  let maxIdx = -1, minIdx = -1;
+  if(withData.length >= 2){
+    let maxVal = -1, minVal = Infinity;
+    results.forEach((r,i)=>{
+      if(!r.hasData) return;
+      if(r.minutes > maxVal){ maxVal = r.minutes; maxIdx = i; }
+      if(r.minutes < minVal){ minVal = r.minutes; minIdx = i; }
+    });
+    if(maxIdx === minIdx){ maxIdx = -1; minIdx = -1; } // todos iguales, no destacar
+  }
+
+  const W = 340, H = 190, padX = 20, baseY = 150, topY = 16;
+  const barAreaW = W - padX*2;
+  const barW = barAreaW / 7 * 0.55;
+  const gap = barAreaW / 7;
+  const maxMinutes = Math.max(...results.map(r=>r.minutes), 60);
+
+  let svg = '';
+  results.forEach((r, i)=>{
+    const cx = padX + gap*i + gap/2;
+    const h = r.hasData ? Math.max(3, (r.minutes / maxMinutes) * (baseY - topY)) : 0;
+    let color = 'var(--night)';
+    let opacity = '1';
+    if(!r.hasData){ color = 'var(--line)'; }
+    else if(i === maxIdx){ color = '#4C8B5C'; }
+    else if(i === minIdx){ color = 'var(--food)'; }
+
+    if(r.hasData){
+      svg += `<rect x="${cx-barW/2}" y="${baseY-h}" width="${barW}" height="${h}" rx="6" fill="${color}"/>`;
+      svg += `<text x="${cx}" y="${baseY-h-8}" font-size="10.5" fill="var(--ink)" text-anchor="middle" font-family="Inter" font-weight="600">${fmtMinutes(r.minutes)}</text>`;
+    } else {
+      svg += `<rect x="${cx-barW/2}" y="${baseY-4}" width="${barW}" height="4" rx="2" fill="${color}"/>`;
+      svg += `<text x="${cx}" y="${baseY-10}" font-size="10" fill="var(--muted)" text-anchor="middle" font-family="Inter">–</text>`;
+    }
+    svg += `<text x="${cx}" y="${baseY+18}" font-size="11" fill="var(--muted)" text-anchor="middle" font-family="Inter" font-weight="600">${WEEKDAY_LETTERS[i]}</text>`;
+    svg += `<text x="${cx}" y="${baseY+32}" font-size="8.5" fill="var(--muted)" text-anchor="middle" font-family="Inter">${fmtShortDate(r.date)}</text>`;
+  });
+  svg += `<line x1="${padX}" y1="${baseY}" x2="${W-padX}" y2="${baseY}" stroke="var(--line)" stroke-width="1"/>`;
+
+  document.getElementById('weekChart').innerHTML = svg;
+
+  const week = getWeekDates(currentDate);
+  document.getElementById('weekRange').textContent =
+    `${fmtShortDate(week[0])} – ${fmtShortDate(week[6])}`;
+
+  const avgEl = document.getElementById('weekAvg');
+  if(withData.length === 0){
+    avgEl.innerHTML = 'Todavía no hay datos de sueño registrados esta semana.';
+  } else {
+    const avg = withData.reduce((s,r)=>s+r.minutes,0) / withData.length;
+    avgEl.innerHTML = `Media: <b>${fmtMinutes(Math.round(avg))}</b> por día (sobre ${withData.length} día${withData.length>1?'s':''} con datos)`;
+  }
+}
+
+async function openWeekly(){
+  if(!db){ showToast('Configura Firebase primero'); return; }
+  document.getElementById('weekOverlay').classList.add('show');
+  document.getElementById('weekChart').innerHTML = '';
+  document.getElementById('weekAvg').textContent = 'Cargando…';
+  const results = await loadWeekSleepData();
+  renderWeekChart(results);
+}
+function closeWeekly(){
+  document.getElementById('weekOverlay').classList.remove('show');
+}
+
+// Swipe para cambiar de día (gesto nativo de iPhone)
+(function enableSwipe(){
+  const app = document.getElementById('app');
+  let startX = 0, startY = 0, tracking = false;
+  app.addEventListener('touchstart', e=>{
+    if(document.getElementById('overlay').classList.contains('show')) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+  }, {passive:true});
+  app.addEventListener('touchend', e=>{
+    if(!tracking) return;
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if(Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*2){
+      changeDay(dx < 0 ? 1 : -1);
+    }
+  }, {passive:true});
+})();
+
+// init
+(function init(){
+  const {str, isToday} = fmtDayLabel(currentDate);
+  document.getElementById('dayLabel').innerHTML = str + (isToday ? '<span class="today-tag">Hoy</span>' : '');
+  if(db) subscribeToDay();
+})();
+</script>
+</body>
+</html>
